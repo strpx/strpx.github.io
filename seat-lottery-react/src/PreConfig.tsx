@@ -16,7 +16,7 @@ interface PreConfigProps {
 function PreConfig({ sessionId, totalSeats, onComplete }: PreConfigProps) {
   const [predefinedSeats, setPredefinedSeats] = useState<PredefinedSeat[]>([]);
   const [newName, setNewName] = useState('');
-  const [newSeat, setNewSeat] = useState<number>(1);
+  const [newSeat, setNewSeat] = useState<number>(0);
   const [isSaving, setIsSaving] = useState(false);
 
   const database = getDatabase();
@@ -46,7 +46,7 @@ function PreConfig({ sessionId, totalSeats, onComplete }: PreConfigProps) {
       return;
     }
 
-    if (newSeat < 1 || newSeat > totalSeats) {
+    if (newSeat === 0 || newSeat < 1 || newSeat > totalSeats) {
       alert(`席番号は1〜${totalSeats}の範囲で入力してください`);
       return;
     }
@@ -58,7 +58,7 @@ function PreConfig({ sessionId, totalSeats, onComplete }: PreConfigProps) {
 
     setPredefinedSeats([...predefinedSeats, { name: newName, seat: newSeat }]);
     setNewName('');
-    setNewSeat(1);
+    setNewSeat(0);
   };
 
   const removePredefinedSeat = (name: string) => {
@@ -143,11 +143,19 @@ function PreConfig({ sessionId, totalSeats, onComplete }: PreConfigProps) {
                 <label>席番号</label>
                 <input
                   type="number"
-                  value={newSeat}
-                  onChange={(e) => setNewSeat(parseInt(e.target.value) || 1)}
+                  value={newSeat === 0 ? '' : newSeat}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === '') {
+                      setNewSeat(0);
+                    } else {
+                      setNewSeat(parseInt(value) || 0);
+                    }
+                  }}
                   min="1"
                   max={totalSeats}
                   placeholder="例: 1"
+                  inputMode="numeric"
                 />
               </div>
               <button className="btn btn-secondary" onClick={addPredefinedSeat}>
