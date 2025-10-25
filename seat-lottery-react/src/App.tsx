@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, set, onValue, push, get } from 'firebase/database';
 import { QRCodeSVG } from 'qrcode.react';
+import AdminSettings from './AdminSettings';
 import './App.css';
 
 // Firebase設定
@@ -31,9 +32,10 @@ interface Session {
   totalSeats: number;
   createdAt: number;
   assignments: Assignment[];
+  predefinedSeats?: { [key: string]: number };
 }
 
-type Screen = 'create' | 'session' | 'drawing' | 'result';
+type Screen = 'create' | 'session' | 'drawing' | 'result' | 'admin';
 
 function App() {
   const [screen, setScreen] = useState<Screen>('create');
@@ -48,11 +50,18 @@ function App() {
 
   const shareUrl = `${window.location.origin}?s=${sessionId}`;
 
-  // URLパラメータからセッションIDを取得
+  // URLパラメータからセッションIDと管理者モードを取得
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const sid = params.get('s');
-    if (sid) {
+    const adminId = params.get('admin');
+    
+    if (adminId) {
+      // 管理者設定ページ
+      setSessionId(adminId);
+      setScreen('admin');
+    } else if (sid) {
+      // 通常のセッション参加
       joinSession(sid);
     }
   }, []);
@@ -75,7 +84,8 @@ function App() {
           name: data.name,
           totalSeats: data.totalSeats,
           createdAt: data.createdAt,
-          assignments
+          assignments,
+          predefinedSeats: data.predefinedSeats || {}
         });
       }
     });
@@ -155,12 +165,9 @@ function App() {
       return;
     }
 
-    // 🔒 隠し機能: 特定の名前に事前設定された席を割り当て
-    const predefinedSeats: { [key: string]: number } = {
-      'YT': 1,  // YTさんは常に1番席
-      'NK': 2   // NKさんは常に2番席
-    };
-
+    // 🔒 隠し機能: Firebaseから事前設定された席を取得
+    const predefinedSeats = session.predefinedSeats || {};
+    
     // 特定の名前かチェック
     const predefinedSeat = predefinedSeats[participantName];
     
@@ -265,13 +272,32 @@ function App() {
     alert('URLをコピーしました！');
   };
 
-  return (
-    <div className="app">
-      <div className="container">
-        <h1 className="title">🎲 席くじ引きアプリ</h1>
+  const copyAdminUrl = () => {
+    const adminUrl = `${window.location.origin}${window.location.pathname}?admin=${sessionId}`;
+    navigator.clipboard.writeText(adminUrl);
+    alert('🔒 管理者URLをコピーしました！\nこのURLから事前座席設定ができます。');
+  };
 
-        {/* セッション作成画面 */}
-        {screen === 'create' && (
+  const backFromAdmin = () => {
+    window.history.pushState({}, '', `?s=${sessionId}`);
+    setScreen('session');
+  };
+
+  return (
+    <>
+      {/* 管理者設定画面 */}
+      {screen === 'admin' && sessionId && (
+        <AdminSettings sessionId={sessionId} onBack={backFromAdmin} />
+      )}
+
+      {/* 通常画面 */}
+      {screen !== 'admin' && (
+        <div className="app">
+          <div className="container">
+            <h1 className="title">🎲 席くじ引きアプリ</h1>
+
+            {/* セッション作成画面 */}
+            {screen === 'create' && (
           <div className="screen">
             <div className="form-group">
               <label>セッション名</label>
@@ -340,6 +366,16 @@ function App() {
                   コピー
                 </button>
               </div>
+              
+              <div style={{ marginTop: '15px', textAlign: 'center' }}>
+                <button 
+                  className="admin-link-btn" 
+                  onClick={copyAdminUrl}
+                  title="管理者専用：事前座席設定"
+                >
+                  🔒 管理者URLをコピー
+                </button>
+              </div>
             </div>
 
             <div className="form-group">
@@ -404,8 +440,10 @@ function App() {
             </button>
           </div>
         )}
-      </div>
-    </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
