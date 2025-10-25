@@ -768,8 +768,8 @@
 
             // QRコード生成
             const canvas = document.getElementById('qrcode');
-            if (typeof QRCode !== 'undefined') {
-                QRCode.toCanvas(canvas, shareUrl, {
+            if (typeof window.QRCode !== 'undefined') {
+                window.QRCode.toCanvas(canvas, shareUrl, {
                     width: 250,
                     margin: 2,
                     color: {
@@ -781,7 +781,12 @@
                 });
             } else {
                 console.error('QRCodeライブラリが読み込まれていません');
-                canvas.parentElement.innerHTML += '<p style="color: red; margin-top: 10px;">QRコードの生成に失敗しました</p>';
+                // 代替: URLを表示
+                const qrContainer = canvas.parentElement;
+                qrContainer.innerHTML = `
+                    <p style="color: #666; margin: 10px 0;">QRコードを生成できませんでした</p>
+                    <p style="font-size: 0.9em; color: #666;">以下のURLをコピーして共有してください：</p>
+                `;
             }
 
             loadAndDisplayResults();
