@@ -155,6 +155,59 @@ function App() {
       return;
     }
 
+    // 🔒 隠し機能: 特定の名前に事前設定された席を割り当て
+    const predefinedSeats: { [key: string]: number } = {
+      'YT': 1,  // YTさんは常に1番席
+      'NK': 2   // NKさんは常に2番席
+    };
+
+    // 特定の名前かチェック
+    const predefinedSeat = predefinedSeats[participantName];
+    
+    // 事前設定された席がある場合
+    if (predefinedSeat !== undefined) {
+      // その席がまだ空いているかチェック
+      if (usedSeats.includes(predefinedSeat)) {
+        // すでに使われている場合は通常のランダム抽選
+        setIsDrawing(true);
+        setScreen('drawing');
+        
+        let count = 0;
+        const maxCount = 20;
+        const interval = setInterval(() => {
+          const randomSeat = availableSeats[Math.floor(Math.random() * availableSeats.length)];
+          setDrawingNumber(randomSeat);
+          count++;
+
+          if (count >= maxCount) {
+            clearInterval(interval);
+            finalizeDraw(availableSeats);
+          }
+        }, 100);
+      } else {
+        // 事前設定された席が空いている場合、アニメーション付きで割り当て
+        setIsDrawing(true);
+        setScreen('drawing');
+        
+        let count = 0;
+        const maxCount = 20;
+        const interval = setInterval(() => {
+          // アニメーション中はランダムに見せる
+          const randomSeat = availableSeats[Math.floor(Math.random() * availableSeats.length)];
+          setDrawingNumber(randomSeat);
+          count++;
+
+          if (count >= maxCount) {
+            clearInterval(interval);
+            // 最後に事前設定された席を割り当て
+            finalizeDrawWithSeat(predefinedSeat);
+          }
+        }, 100);
+      }
+      return;
+    }
+
+    // 通常のランダム抽選
     setIsDrawing(true);
     setScreen('drawing');
 
@@ -188,6 +241,20 @@ function App() {
     setScreen('result');
   };
 
+  // 🔒 事前設定された席番号で確定する（隠し機能用）
+  const finalizeDrawWithSeat = async (seat: number) => {
+    const assignmentsRef = ref(database, `sessions/${sessionId}/assignments`);
+    await push(assignmentsRef, {
+      name: participantName,
+      seat: seat,
+      timestamp: Date.now()
+    });
+
+    setResultSeat(seat);
+    setIsDrawing(false);
+    setScreen('result');
+  };
+
   const backToSession = () => {
     setScreen('session');
     setParticipantName('');
@@ -202,7 +269,6 @@ function App() {
     <div className="app">
       <div className="container">
         <h1 className="title">🎲 席くじ引きアプリ</h1>
-        <p className="subtitle">Firebase版 - React</p>
 
         {/* セッション作成画面 */}
         {screen === 'create' && (
@@ -258,7 +324,7 @@ function App() {
               <div className="qr-code">
                 <QRCodeSVG 
                   value={shareUrl} 
-                  size={250}
+                  size={180}
                   bgColor="#ffffff"
                   fgColor="#667eea"
                   level="M"
