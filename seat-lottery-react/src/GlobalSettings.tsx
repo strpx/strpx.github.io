@@ -72,9 +72,10 @@ function GlobalSettings() {
       await set(globalRef, predefinedSeatsObj);
 
       alert('✅ グローバル設定を保存しました！\nすべての新規セッションに適用されます。');
-    } catch (error) {
+    } catch (error: any) {
       console.error('保存エラー:', error);
-      alert('❌ 保存に失敗しました');
+      const errorMessage = error?.message || '不明なエラー';
+      alert(`❌ 保存に失敗しました\n\nエラー: ${errorMessage}\n\nFirebaseのセキュリティルールを確認してください。`);
     } finally {
       setIsSaving(false);
     }
@@ -90,9 +91,10 @@ function GlobalSettings() {
       await remove(globalRef);
       setPredefinedSeats([]);
       alert('✅ すべての設定をリセットしました');
-    } catch (error) {
+    } catch (error: any) {
       console.error('リセットエラー:', error);
-      alert('❌ リセットに失敗しました');
+      const errorMessage = error?.message || '不明なエラー';
+      alert(`❌ リセットに失敗しました\n\nエラー: ${errorMessage}\n\nFirebaseのセキュリティルールを確認してください。`);
     }
   };
 
@@ -201,6 +203,23 @@ function GlobalSettings() {
               💡 <strong>アクセス方法:</strong> このページのURLをブックマークしておくと便利です
               <br />URL: <code style={{ background: '#fff', padding: '2px 6px', borderRadius: '4px' }}>
                 {window.location.origin}{window.location.pathname}?global
+              </code>
+            </p>
+          </div>
+
+          <div style={{ marginTop: '15px', padding: '15px', background: '#fff3cd', borderRadius: '10px', borderLeft: '4px solid #ffc107' }}>
+            <p style={{ fontSize: '0.85em', color: '#856404', margin: 0, lineHeight: '1.6' }}>
+              ⚠️ <strong>保存/リセットが失敗する場合:</strong>
+              <br />Firebaseコンソールでデータベースルールを更新してください：
+              <br /><code style={{ background: '#fff', padding: '2px 6px', borderRadius: '4px', display: 'block', marginTop: '8px', fontSize: '0.85em' }}>
+                {`{`}
+                <br />&nbsp;&nbsp;"rules": {`{`}
+                <br />&nbsp;&nbsp;&nbsp;&nbsp;"globalSettings": {`{`}
+                <br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".read": true,
+                <br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".write": true
+                <br />&nbsp;&nbsp;&nbsp;&nbsp;{`}`}
+                <br />&nbsp;&nbsp;{`}`}
+                <br />{`}`}
               </code>
             </p>
           </div>
