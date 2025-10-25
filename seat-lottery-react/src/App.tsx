@@ -37,6 +37,11 @@ interface Session {
 
 type Screen = 'create' | 'session' | 'drawing' | 'result' | 'admin';
 
+interface PredefinedSeat {
+  name: string;
+  seat: number;
+}
+
 function App() {
   const [screen, setScreen] = useState<Screen>('create');
   const [sessionName, setSessionName] = useState('');
@@ -47,6 +52,12 @@ function App() {
   const [drawingNumber, setDrawingNumber] = useState<number>(0);
   const [resultSeat, setResultSeat] = useState<number>(0);
   const [isDrawing, setIsDrawing] = useState(false);
+  
+  // セッション作成前の事前設定
+  const [predefineSeats, setPredefineSeats] = useState<PredefinedSeat[]>([]);
+  const [newPreName, setNewPreName] = useState('');
+  const [newPreSeat, setNewPreSeat] = useState<number>(1);
+  const [showPredefinedSection, setShowPredefinedSection] = useState(false);
 
   const shareUrl = `${window.location.origin}?s=${sessionId}`;
 
@@ -111,11 +122,18 @@ function App() {
     const sid = generateSessionId();
     const sessionRef = ref(database, `sessions/${sid}`);
     
+    // 事前設定を含めてセッションを作成
+    const predefinedSeatsObj: { [key: string]: number } = {};
+    predefineSeats.forEach(seat => {
+      predefinedSeatsObj[seat.name] = seat.seat;
+    });
+    
     await set(sessionRef, {
       name: sessionName,
       totalSeats,
       createdAt: Date.now(),
-      status: 'active'
+      status: 'active',
+      predefinedSeats: predefinedSeatsObj
     });
 
     setSessionId(sid);
@@ -283,6 +301,32 @@ function App() {
     setScreen('session');
   };
 
+  // セッション作成前の事前設定管理
+  const addPredefinedSeatToCreate = () => {
+    if (!newPreName.trim()) {
+      alert('名前を入力してください');
+      return;
+    }
+
+    if (newPreSeat < 1 || newPreSeat > totalSeats) {
+      alert(`席番号は1〜${totalSeats}の範囲で入力してください`);
+      return;
+    }
+
+    if (predefineSeats.some(s => s.name === newPreName)) {
+      alert('この名前はすでに登録されています');
+      return;
+    }
+
+    setPredefineSeats([...predefineSeats, { name: newPreName, seat: newPreSeat }]);
+    setNewPreName('');
+    setNewPreSeat(1);
+  };
+
+  const removePredefinedSeatFromCreate = (name: string) => {
+    setPredefineSeats(predefineSeats.filter(s => s.name !== name));
+  };
+
   return (
     <>
       {/* 管理者設定画面 */}
@@ -319,6 +363,66 @@ function App() {
                 placeholder="例: 10"
               />
             </div>
+
+            {/* 事前設定セクション */}
+            <div className="predefined-section">
+              <button 
+                className="toggle-predefined-btn"
+                onClick={() => setShowPredefinedSection(!showPredefinedSection)}
+              >
+                {showPredefinedSection ? '▼' : '▶'} 🔒 事前座席設定（オプション）
+              </button>
+
+              {showPredefinedSection && (
+                <div className="predefined-content">
+                  <p className="info-text-small">
+                    特定の名前を事前に設定すると、その人がくじを引いた時に指定した席番号が割り当てられます。
+                  </p>
+
+                  {predefineSeats.length > 0 && (
+                    <div className="predefined-list-small">
+                      {predefineSeats.map((seat, index) => (
+                        <div key={index} className="predefined-item-small">
+                          <span>{seat.name} → {seat.seat}番</span>
+                          <button 
+                            className="remove-btn-small"
+                            onClick={() => removePredefinedSeatFromCreate(seat.name)}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="add-predefined-form">
+                    <input
+                      type="text"
+                      value={newPreName}
+                      onChange={(e) => setNewPreName(e.target.value)}
+                      placeholder="名前"
+                      className="small-input"
+                    />
+                    <input
+                      type="number"
+                      value={newPreSeat}
+                      onChange={(e) => setNewPreSeat(parseInt(e.target.value) || 1)}
+                      min="1"
+                      max={totalSeats}
+                      placeholder="席番号"
+                      className="small-input"
+                    />
+                    <button 
+                      className="add-btn-small"
+                      onClick={addPredefinedSeatToCreate}
+                    >
+                      追加
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <button className="btn btn-primary" onClick={createSession}>
               セッション作成
             </button>
