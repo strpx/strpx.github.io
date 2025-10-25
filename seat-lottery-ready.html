@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>席くじ引きアプリ - Firebase版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', YuGothic, Meiryo, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #FF6B35;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        .session-info {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .session-info h3 {
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+
+        .session-info p {
+            margin: 5px 0;
+            color: #666;
+        }
+
+        .qr-container {
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            border: 2px solid #667eea;
+        }
+
+        .qr-container canvas {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .qr-info {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .lottery-display {
+            text-align: center;
+            padding: 60px 20px;
+            margin: 20px 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            color: white;
+        }
+
+        .seat-number {
+            font-size: 120px;
+            font-weight: bold;
+            animation: pulse 0.1s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .result-number {
+            font-size: 80px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .results-list {
+            margin-top: 20px;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .result-item .name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .result-item .seat {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .status-message {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .copy-btn {
+            display: inline-block;
+            padding: 8px 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-left: 10px;
+        }
+
+        .copy-btn:hover {
+            background: #5568d3;
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+        }
+
+        .connection-status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .connection-status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .connection-status .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+
+            .seat-number {
+                font-size: 80px;
+            }
+
+            .result-number {
+                font-size: 60px;
+            }
+
+            .connection-status {
+                top: 10px;
+                right: 10px;
+                font-size: 0.75em;
+                padding: 6px 12px;
+            }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- 接続状態表示 -->
+    <div id="connectionStatus" class="connection-status disconnected">
+        <span class="dot"></span>
+        <span id="statusText">接続中...</span>
+    </div>
+
+    <div class="container">
+        <h1>🎲 席くじ引きアプリ<span class="badge">Firebase版</span></h1>
+        <p class="subtitle">QRコードで複数デバイス共有</p>
+
+        <!-- トップ画面 -->
+        <div id="topScreen" class="screen active">
+            <div class="form-group">
+                <label>セッション名</label>
+                <input type="text" id="sessionName" placeholder="例: 新年会 2025">
+            </div>
+            <div class="form-group">
+                <label>席の数</label>
+                <input type="number" id="totalSeats" placeholder="例: 10" min="1" max="100">
+            </div>
+            <button class="btn btn-primary" onclick="createSession()">セッション作成</button>
+        </div>
+
+        <!-- QRコード表示画面 -->
+        <div id="qrScreen" class="screen">
+            <div class="session-info">
+                <h3 id="displaySessionName"></h3>
+                <p>席の数: <span id="displayTotalSeats"></span></p>
+                <p>セッションID: <strong id="displaySessionId"></strong></p>
+            </div>
+
+            <!-- 統計表示 -->
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="statDrawn">0</div>
+                    <div class="stat-label">抽選済み</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="statRemaining">0</div>
+                    <div class="stat-label">残り席</div>
+                </div>
+            </div>
+
+            <div class="qr-container">
+                <h3 style="color: #667eea; margin-bottom: 15px;">📱 QRコードで参加</h3>
+                <canvas id="qrcode"></canvas>
+                <div class="qr-info">
+                    スマートフォンでQRコードを読み取るか、<br>
+                    以下のURLをシェアしてください
+                </div>
+                <div style="margin-top: 10px; word-break: break-all; font-size: 0.8em;">
+                    <strong id="shareUrl"></strong>
+                    <button class="copy-btn" onclick="copyUrl()">コピー</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>あなたの名前</label>
+                <input type="text" id="participantName" placeholder="例: 山田太郎">
+            </div>
+
+            <button class="btn btn-primary" id="drawButton" onclick="drawSeat()">🎯 くじを引く</button>
+
+            <div class="results-list" id="resultsList"></div>
+        </div>
+
+        <!-- くじ引き中画面 -->
+        <div id="drawingScreen" class="screen">
+            <div class="lottery-display">
+                <div class="seat-number" id="drawingNumber">?</div>
+                <p>抽選中...</p>
+            </div>
+        </div>
+
+        <!-- 結果表示画面 -->
+        <div id="resultScreen" class="screen">
+            <div id="statusMessage"></div>
+            <div class="lottery-display" style="background: white;">
+                <p style="color: #666; font-size: 1.2em; margin-bottom: 10px;">あなたの席は</p>
+                <div class="result-number" id="resultNumber">1</div>
+                <p style="color: #666; font-size: 1.2em;">番です！</p>
+            </div>
+            <button class="btn btn-secondary" onclick="backToSession()">セッションに戻る</button>
+        </div>
+
+        <!-- 読み込み中画面 -->
+        <div id="loadingScreen" class="screen">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>セッションを読み込み中...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- QRCode生成ライブラリ -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, set, get, onValue, push, update, query, orderByChild } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        // Firebase設定
+        const firebaseConfig = {
+            apiKey: "AIzaSyCPZ89dzyZu4SOQmC1GWQZ64PlBNpqcuYk",
+            authDomain: "strap-9e1ba.firebaseapp.com",
+            databaseURL: "https://strap-9e1ba-default-rtdb.firebaseio.com",
+            projectId: "strap-9e1ba",
+            storageBucket: "strap-9e1ba.firebasestorage.app",
+            messagingSenderId: "6273757983",
+            appId: "1:6273757983:web:384d833700a30e8365362a",
+            measurementId: "G-10WY33CRQB"
+        };
+
+        // Firebase初期化
+        let app, database;
+        let currentSession = null;
+        let currentSessionId = null;
+        let sessionListener = null;
+
+        try {
+            app = initializeApp(firebaseConfig);
+            database = getDatabase(app);
+            updateConnectionStatus(true);
+        } catch (error) {
+            console.error('Firebase初期化エラー:', error);
+            updateConnectionStatus(false);
+            showError('Firebase設定を確認してください');
+        }
+
+        // グローバル変数に公開
+        window.firebaseDB = database;
+        window.firebaseRef = ref;
+        window.firebaseGet = get;
+        window.firebaseSet = set;
+        window.firebaseOnValue = onValue;
+        window.firebasePush = push;
+        window.firebaseUpdate = update;
+        window.firebaseQuery = query;
+        window.firebaseOrderByChild = orderByChild;
+
+        // 接続状態更新
+        function updateConnectionStatus(connected) {
+            const statusEl = document.getElementById('connectionStatus');
+            const statusText = document.getElementById('statusText');
+            
+            if (connected) {
+                statusEl.className = 'connection-status connected';
+                statusText.textContent = '接続済み';
+            } else {
+                statusEl.className = 'connection-status disconnected';
+                statusText.textContent = '未接続';
+            }
+        }
+
+        // エラー表示
+        function showError(message) {
+            const topScreen = document.getElementById('topScreen');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'status-message status-error';
+            errorDiv.textContent = '⚠️ ' + message;
+            topScreen.insertBefore(errorDiv, topScreen.firstChild);
+        }
+
+        // ページ読み込み時の処理
+        window.addEventListener('load', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const sessionId = urlParams.get('s');
+            
+            if (sessionId) {
+                joinSessionById(sessionId);
+            }
+        });
+
+        // セッション作成
+        window.createSession = async function() {
+            const sessionName = document.getElementById('sessionName').value.trim();
+            const totalSeats = parseInt(document.getElementById('totalSeats').value);
+
+            if (!sessionName) {
+                alert('セッション名を入力してください');
+                return;
+            }
+
+            if (!totalSeats || totalSeats < 1 || totalSeats > 100) {
+                alert('席の数は1〜100の範囲で入力してください');
+                return;
+            }
+
+            if (!database) {
+                alert('Firebaseに接続できません。設定を確認してください。');
+                return;
+            }
+
+            try {
+                // セッションIDを生成
+                currentSessionId = generateSessionId();
+                
+                // Firebaseにセッションを作成
+                const sessionRef = ref(database, `sessions/${currentSessionId}`);
+                await set(sessionRef, {
+                    name: sessionName,
+                    totalSeats: totalSeats,
+                    createdAt: Date.now(),
+                    status: 'active'
+                });
+
+                // セッションデータを取得
+                const snapshot = await get(sessionRef);
+                currentSession = {
+                    id: currentSessionId,
+                    ...snapshot.val(),
+                    assignments: []
+                };
+
+                // リアルタイムリスナーを設定
+                setupRealtimeListener();
+
+                // QRコード画面を表示
+                showQRScreen();
+            } catch (error) {
+                console.error('セッション作成エラー:', error);
+                alert('セッションの作成に失敗しました: ' + error.message);
+            }
+        };
+
+        // セッションIDで参加
+        window.joinSessionById = async function(sessionId) {
+            if (!database) {
+                alert('Firebaseに接続できません');
+                return;
+            }
+
+            // ローディング表示
+            showScreen('loadingScreen');
+
+            try {
+                currentSessionId = sessionId;
+                
+                // Firebaseからセッションを取得
+                const sessionRef = ref(database, `sessions/${sessionId}`);
+                const snapshot = await get(sessionRef);
+
+                if (!snapshot.exists()) {
+                    throw new Error('セッションが見つかりません');
+                }
+
+                currentSession = {
+                    id: sessionId,
+                    ...snapshot.val(),
+                    assignments: []
+                };
+
+                // リアルタイムリスナーを設定
+                setupRealtimeListener();
+
+                // QRコード画面を表示
+                showQRScreen();
+            } catch (error) {
+                console.error('セッション参加エラー:', error);
+                alert('セッションへの参加に失敗しました: ' + error.message);
+                showScreen('topScreen');
+            }
+        };
+
+        // リアルタイムリスナー設定
+        function setupRealtimeListener() {
+            if (sessionListener) {
+                return; // すでに設定済み
+            }
+
+            const assignmentsRef = ref(database, `sessions/${currentSessionId}/assignments`);
+            sessionListener = onValue(assignmentsRef, (snapshot) => {
+                const assignments = [];
+                snapshot.forEach((childSnapshot) => {
+                    assignments.push({
+                        id: childSnapshot.key,
+                        ...childSnapshot.val()
+                    });
+                });
+                
+                currentSession.assignments = assignments;
+                loadAndDisplayResults();
+            });
+        }
+
+        // くじを引く
+        window.drawSeat = async function() {
+            const participantName = document.getElementById('participantName').value.trim();
+
+            if (!participantName) {
+                alert('名前を入力してください');
+                return;
+            }
+
+            // すでに引いているかチェック
+            if (currentSession.assignments.some(a => a.name === participantName)) {
+                alert('この名前はすでにくじを引いています');
+                return;
+            }
+
+            // 残り席を確認
+            const usedSeats = currentSession.assignments.map(a => a.seat);
+            const availableSeats = [];
+            for (let i = 1; i <= currentSession.totalSeats; i++) {
+                if (!usedSeats.includes(i)) {
+                    availableSeats.push(i);
+                }
+            }
+
+            if (availableSeats.length === 0) {
+                alert('すべての席が埋まりました');
+                return;
+            }
+
+            // ボタンを無効化
+            document.getElementById('drawButton').disabled = true;
+
+            // 抽選画面を表示
+            showScreen('drawingScreen');
+
+            // 2秒間のアニメーション
+            await animateDraw(availableSeats);
+
+            // ランダムに席を選択
+            const selectedSeat = availableSeats[Math.floor(Math.random() * availableSeats.length)];
+
+            try {
+                // Firebaseに保存
+                const assignmentsRef = ref(database, `sessions/${currentSessionId}/assignments`);
+                await push(assignmentsRef, {
+                    name: participantName,
+                    seat: selectedSeat,
+                    timestamp: Date.now()
+                });
+
+                // 結果画面を表示
+                showResult(selectedSeat);
+            } catch (error) {
+                console.error('くじ引きエラー:', error);
+                alert('くじ引きに失敗しました: ' + error.message);
+                showScreen('qrScreen');
+            } finally {
+                document.getElementById('drawButton').disabled = false;
+            }
+        };
+
+        // アニメーション
+        function animateDraw(availableSeats) {
+            return new Promise((resolve) => {
+                let count = 0;
+                const maxCount = 20; // 20回 × 100ms = 2秒
+                
+                const interval = setInterval(() => {
+                    const randomSeat = availableSeats[Math.floor(Math.random() * availableSeats.length)];
+                    document.getElementById('drawingNumber').textContent = randomSeat;
+                    
+                    count++;
+                    if (count >= maxCount) {
+                        clearInterval(interval);
+                        resolve();
+                    }
+                }, 100);
+            });
+        }
+
+        // 結果表示
+        function showResult(seat) {
+            showScreen('resultScreen');
+            document.getElementById('resultNumber').textContent = seat;
+            
+            document.getElementById('statusMessage').innerHTML = 
+                '<div class="status-message status-success">🎉 おめでとうございます！</div>';
+        }
+
+        // セッションに戻る
+        window.backToSession = function() {
+            showScreen('qrScreen');
+            document.getElementById('participantName').value = '';
+        };
+
+        // QRコード画面表示
+        function showQRScreen() {
+            showScreen('qrScreen');
+
+            document.getElementById('displaySessionName').textContent = currentSession.name;
+            document.getElementById('displayTotalSeats').textContent = currentSession.totalSeats;
+            document.getElementById('displaySessionId').textContent = currentSessionId;
+
+            // 共有URL生成
+            const shareUrl = `${window.location.origin}${window.location.pathname}?s=${currentSessionId}`;
+            document.getElementById('shareUrl').textContent = shareUrl;
+
+            // QRコード生成
+            const canvas = document.getElementById('qrcode');
+            if (typeof QRCode !== 'undefined') {
+                QRCode.toCanvas(canvas, shareUrl, {
+                    width: 250,
+                    margin: 2,
+                    color: {
+                        dark: '#667eea',
+                        light: '#ffffff'
+                    }
+                }, (error) => {
+                    if (error) console.error('QRコード生成エラー:', error);
+                });
+            } else {
+                console.error('QRCodeライブラリが読み込まれていません');
+                canvas.parentElement.innerHTML += '<p style="color: red; margin-top: 10px;">QRコードの生成に失敗しました</p>';
+            }
+
+            loadAndDisplayResults();
+        }
+
+        // 結果表示
+        function loadAndDisplayResults() {
+            if (!currentSession) return;
+
+            const resultsList = document.getElementById('resultsList');
+            
+            // 統計更新
+            const drawn = currentSession.assignments.length;
+            const remaining = currentSession.totalSeats - drawn;
+            document.getElementById('statDrawn').textContent = drawn;
+            document.getElementById('statRemaining').textContent = remaining;
+
+            if (currentSession.assignments.length === 0) {
+                resultsList.innerHTML = '<div class="status-message status-info">まだ誰もくじを引いていません</div>';
+                return;
+            }
+
+            // 席番号順にソート
+            const sorted = [...currentSession.assignments].sort((a, b) => a.seat - b.seat);
+
+            resultsList.innerHTML = '<h3 style="margin: 20px 0 10px 0; color: #667eea;">📊 抽選結果</h3>';
+            
+            sorted.forEach(assignment => {
+                const div = document.createElement('div');
+                div.className = 'result-item';
+                div.innerHTML = `
+                    <span class="name">${escapeHtml(assignment.name)}</span>
+                    <span class="seat">${assignment.seat}番</span>
+                `;
+                resultsList.appendChild(div);
+            });
+
+            // すべて埋まった場合の通知
+            if (remaining === 0) {
+                const completeDiv = document.createElement('div');
+                completeDiv.className = 'status-message status-success';
+                completeDiv.textContent = '✅ すべての席が決まりました！';
+                resultsList.appendChild(completeDiv);
+            }
+        }
+
+        // 画面切り替え
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        // URLをコピー
+        window.copyUrl = function() {
+            const url = document.getElementById('shareUrl').textContent;
+            navigator.clipboard.writeText(url).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✓ コピーしました';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+            });
+        };
+
+        // セッションID生成
+        function generateSessionId() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let result = '';
+            for (let i = 0; i < 6; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        // HTMLエスケープ
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

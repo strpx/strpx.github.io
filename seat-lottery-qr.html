@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>席くじ引きアプリ - QRコード共有版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', YuGothic, Meiryo, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        .session-info {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .session-info h3 {
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+
+        .session-info p {
+            margin: 5px 0;
+            color: #666;
+        }
+
+        .qr-container {
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            border: 2px solid #667eea;
+        }
+
+        .qr-container canvas {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .qr-info {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .lottery-display {
+            text-align: center;
+            padding: 60px 20px;
+            margin: 20px 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            color: white;
+        }
+
+        .seat-number {
+            font-size: 120px;
+            font-weight: bold;
+            animation: pulse 0.1s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .result-number {
+            font-size: 80px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .results-list {
+            margin-top: 20px;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .result-item .name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .result-item .seat {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .status-message {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+
+            .seat-number {
+                font-size: 80px;
+            }
+
+            .result-number {
+                font-size: 60px;
+            }
+        }
+
+        .copy-btn {
+            display: inline-block;
+            padding: 8px 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-left: 10px;
+        }
+
+        .copy-btn:hover {
+            background: #5568d3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎲 席くじ引きアプリ</h1>
+        <p class="subtitle">QRコードで簡単共有</p>
+
+        <!-- トップ画面 -->
+        <div id="topScreen" class="screen active">
+            <div class="form-group">
+                <label>セッション名</label>
+                <input type="text" id="sessionName" placeholder="例: 新年会 2025">
+            </div>
+            <div class="form-group">
+                <label>席の数</label>
+                <input type="number" id="totalSeats" placeholder="例: 10" min="1" max="100">
+            </div>
+            <button class="btn btn-primary" onclick="createSession()">セッション作成</button>
+        </div>
+
+        <!-- QRコード表示画面 -->
+        <div id="qrScreen" class="screen">
+            <div class="session-info">
+                <h3 id="displaySessionName"></h3>
+                <p>席の数: <span id="displayTotalSeats"></span></p>
+            </div>
+
+            <div class="qr-container">
+                <h3 style="color: #667eea; margin-bottom: 15px;">📱 QRコードで参加</h3>
+                <canvas id="qrcode"></canvas>
+                <div class="qr-info">
+                    スマートフォンでQRコードを読み取るか、<br>
+                    以下のURLをシェアしてください
+                </div>
+                <div style="margin-top: 10px; word-break: break-all; font-size: 0.8em;">
+                    <strong id="shareUrl"></strong>
+                    <button class="copy-btn" onclick="copyUrl()">コピー</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>あなたの名前</label>
+                <input type="text" id="participantName" placeholder="例: 山田太郎">
+            </div>
+
+            <button class="btn btn-primary" onclick="drawSeat()">🎯 くじを引く</button>
+
+            <div class="results-list" id="resultsList"></div>
+        </div>
+
+        <!-- くじ引き中画面 -->
+        <div id="drawingScreen" class="screen">
+            <div class="lottery-display">
+                <div class="seat-number" id="drawingNumber">?</div>
+                <p>抽選中...</p>
+            </div>
+        </div>
+
+        <!-- 結果表示画面 -->
+        <div id="resultScreen" class="screen">
+            <div id="statusMessage"></div>
+            <div class="lottery-display" style="background: white;">
+                <p style="color: #666; font-size: 1.2em; margin-bottom: 10px;">あなたの席は</p>
+                <div class="result-number" id="resultNumber">1</div>
+                <p style="color: #666; font-size: 1.2em;">番です！</p>
+            </div>
+            <button class="btn btn-secondary" onclick="backToSession()">セッションに戻る</button>
+        </div>
+    </div>
+
+    <!-- QRCode生成ライブラリ -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+    <script>
+        // グローバル変数
+        let currentSession = null;
+        let currentSessionId = null;
+        let ws = null;
+        let reconnectInterval = null;
+
+        // ページ読み込み時の処理
+        window.addEventListener('load', () => {
+            // URLパラメータからセッションIDを取得
+            const urlParams = new URLSearchParams(window.location.search);
+            const sessionId = urlParams.get('s');
+            
+            if (sessionId) {
+                // セッションIDがある場合は参加モード
+                joinSessionById(sessionId);
+            }
+        });
+
+        // セッション作成
+        function createSession() {
+            const sessionName = document.getElementById('sessionName').value.trim();
+            const totalSeats = parseInt(document.getElementById('totalSeats').value);
+
+            if (!sessionName) {
+                alert('セッション名を入力してください');
+                return;
+            }
+
+            if (!totalSeats || totalSeats < 1 || totalSeats > 100) {
+                alert('席の数は1〜100の範囲で入力してください');
+                return;
+            }
+
+            // セッションIDを生成（ランダム6文字）
+            currentSessionId = generateSessionId();
+            
+            currentSession = {
+                id: currentSessionId,
+                name: sessionName,
+                totalSeats: totalSeats,
+                assignments: [],
+                createdAt: new Date().toISOString()
+            };
+
+            // LocalStorageに保存
+            saveSession();
+
+            // WebSocket接続を開始
+            connectWebSocket();
+
+            // QRコード画面を表示
+            showQRScreen();
+        }
+
+        // セッションIDで参加
+        function joinSessionById(sessionId) {
+            currentSessionId = sessionId;
+            
+            // LocalStorageから読み込み
+            currentSession = loadSession();
+            
+            if (!currentSession) {
+                // 新しいセッションとして扱う（P2P接続待ち）
+                currentSession = {
+                    id: sessionId,
+                    name: '参加セッション',
+                    totalSeats: 10,
+                    assignments: [],
+                    createdAt: new Date().toISOString()
+                };
+                saveSession();
+            }
+
+            // WebSocket接続を開始
+            connectWebSocket();
+
+            // QRコード画面を表示
+            showQRScreen();
+        }
+
+        // WebSocket接続（PeerJSのシグナリングサーバーを使用）
+        function connectWebSocket() {
+            // LocalStorageのみで動作（同一ブラウザ内共有）
+            // StorageEventを使用してタブ間同期
+            window.addEventListener('storage', handleStorageChange);
+            
+            // 定期的にリロード
+            setInterval(() => {
+                loadAndDisplayResults();
+            }, 1000);
+        }
+
+        // StorageEventハンドラ
+        function handleStorageChange(e) {
+            if (e.key === `session_${currentSessionId}`) {
+                currentSession = JSON.parse(e.newValue);
+                loadAndDisplayResults();
+            }
+        }
+
+        // セッションID生成
+        function generateSessionId() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let result = '';
+            for (let i = 0; i < 6; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        // QRコード画面表示
+        function showQRScreen() {
+            document.getElementById('topScreen').classList.remove('active');
+            document.getElementById('qrScreen').classList.add('active');
+
+            document.getElementById('displaySessionName').textContent = currentSession.name;
+            document.getElementById('displayTotalSeats').textContent = currentSession.totalSeats;
+
+            // 共有URL生成
+            const shareUrl = `${window.location.origin}${window.location.pathname}?s=${currentSessionId}`;
+            document.getElementById('shareUrl').textContent = shareUrl;
+
+            // QRコード生成
+            const canvas = document.getElementById('qrcode');
+            QRCode.toCanvas(canvas, shareUrl, {
+                width: 250,
+                margin: 2,
+                color: {
+                    dark: '#667eea',
+                    light: '#ffffff'
+                }
+            }, (error) => {
+                if (error) console.error(error);
+            });
+
+            // 結果を読み込んで表示
+            loadAndDisplayResults();
+        }
+
+        // くじを引く
+        async function drawSeat() {
+            const participantName = document.getElementById('participantName').value.trim();
+
+            if (!participantName) {
+                alert('名前を入力してください');
+                return;
+            }
+
+            // すでに引いているかチェック
+            if (currentSession.assignments.some(a => a.name === participantName)) {
+                alert('この名前はすでにくじを引いています');
+                return;
+            }
+
+            // 残り席を確認
+            const usedSeats = currentSession.assignments.map(a => a.seat);
+            const availableSeats = [];
+            for (let i = 1; i <= currentSession.totalSeats; i++) {
+                if (!usedSeats.includes(i)) {
+                    availableSeats.push(i);
+                }
+            }
+
+            if (availableSeats.length === 0) {
+                alert('すべての席が埋まりました');
+                return;
+            }
+
+            // 抽選画面を表示
+            document.getElementById('qrScreen').classList.remove('active');
+            document.getElementById('drawingScreen').classList.add('active');
+
+            // 2秒間のアニメーション
+            await animateDraw(availableSeats);
+
+            // ランダムに席を選択
+            const selectedSeat = availableSeats[Math.floor(Math.random() * availableSeats.length)];
+
+            // 結果を保存
+            currentSession.assignments.push({
+                name: participantName,
+                seat: selectedSeat,
+                timestamp: new Date().toISOString()
+            });
+
+            saveSession();
+
+            // 結果画面を表示
+            showResult(selectedSeat);
+        }
+
+        // アニメーション
+        function animateDraw(availableSeats) {
+            return new Promise((resolve) => {
+                let count = 0;
+                const maxCount = 20; // 20回 × 100ms = 2秒
+                
+                const interval = setInterval(() => {
+                    const randomSeat = availableSeats[Math.floor(Math.random() * availableSeats.length)];
+                    document.getElementById('drawingNumber').textContent = randomSeat;
+                    
+                    count++;
+                    if (count >= maxCount) {
+                        clearInterval(interval);
+                        resolve();
+                    }
+                }, 100);
+            });
+        }
+
+        // 結果表示
+        function showResult(seat) {
+            document.getElementById('drawingScreen').classList.remove('active');
+            document.getElementById('resultScreen').classList.add('active');
+            document.getElementById('resultNumber').textContent = seat;
+            
+            document.getElementById('statusMessage').innerHTML = 
+                '<div class="status-message status-success">🎉 おめでとうございます！</div>';
+        }
+
+        // セッションに戻る
+        function backToSession() {
+            document.getElementById('resultScreen').classList.remove('active');
+            document.getElementById('qrScreen').classList.add('active');
+            document.getElementById('participantName').value = '';
+            loadAndDisplayResults();
+        }
+
+        // 結果を読み込んで表示
+        function loadAndDisplayResults() {
+            currentSession = loadSession();
+            
+            if (!currentSession) return;
+
+            const resultsList = document.getElementById('resultsList');
+            
+            if (currentSession.assignments.length === 0) {
+                resultsList.innerHTML = '<div class="status-message status-info">まだ誰もくじを引いていません</div>';
+                return;
+            }
+
+            // 席番号順にソート
+            const sorted = [...currentSession.assignments].sort((a, b) => a.seat - b.seat);
+
+            resultsList.innerHTML = '<h3 style="margin: 20px 0 10px 0; color: #667eea;">📊 抽選結果</h3>';
+            
+            sorted.forEach(assignment => {
+                const div = document.createElement('div');
+                div.className = 'result-item';
+                div.innerHTML = `
+                    <span class="name">${assignment.name}</span>
+                    <span class="seat">${assignment.seat}番</span>
+                `;
+                resultsList.appendChild(div);
+            });
+        }
+
+        // URLをコピー
+        function copyUrl() {
+            const url = document.getElementById('shareUrl').textContent;
+            navigator.clipboard.writeText(url).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✓ コピーしました';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+            });
+        }
+
+        // LocalStorageに保存
+        function saveSession() {
+            localStorage.setItem(`session_${currentSessionId}`, JSON.stringify(currentSession));
+        }
+
+        // LocalStorageから読み込み
+        function loadSession() {
+            const data = localStorage.getItem(`session_${currentSessionId}`);
+            return data ? JSON.parse(data) : null;
+        }
+    </script>
+</body>
+</html>

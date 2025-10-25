@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase接続テスト</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', YuGothic, Meiryo, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 700px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 30px;
+        }
+
+        .status-box {
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-weight: 600;
+        }
+
+        .status-checking {
+            background: #fff3cd;
+            color: #856404;
+            border: 2px solid #ffeaa7;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+
+        .info-table {
+            width: 100%;
+            margin: 20px 0;
+            border-collapse: collapse;
+        }
+
+        .info-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .info-table td:first-child {
+            font-weight: 600;
+            color: #667eea;
+            width: 40%;
+        }
+
+        .info-table td:last-child {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            word-break: break-all;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .steps {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .steps h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .steps ol {
+            margin-left: 20px;
+        }
+
+        .steps li {
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+
+        .code {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+
+        .link {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 Firebase接続テスト</h1>
+
+        <div id="statusBox" class="status-box status-checking">
+            <div class="spinner"></div>
+            <p style="text-align: center; margin-top: 10px;">接続をテスト中...</p>
+        </div>
+
+        <table class="info-table">
+            <tr>
+                <td>プロジェクトID</td>
+                <td id="projectId">-</td>
+            </tr>
+            <tr>
+                <td>認証ドメイン</td>
+                <td id="authDomain">-</td>
+            </tr>
+            <tr>
+                <td>データベースURL</td>
+                <td id="databaseURL">-</td>
+            </tr>
+            <tr>
+                <td>ストレージ</td>
+                <td id="storageBucket">-</td>
+            </tr>
+        </table>
+
+        <div id="resultDetails"></div>
+        <div id="nextSteps"></div>
+
+        <button class="btn" onclick="location.reload()">再テスト</button>
+        <button class="btn" style="background: #6c757d; margin-top: 10px;" onclick="location.href='seat-lottery-ready.html'">
+            アプリを開く
+        </button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, set, get, remove } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCPZ89dzyZu4SOQmC1GWQZ64PlBNpqcuYk",
+            authDomain: "strap-9e1ba.firebaseapp.com",
+            databaseURL: "https://strap-9e1ba-default-rtdb.firebaseio.com",
+            projectId: "strap-9e1ba",
+            storageBucket: "strap-9e1ba.firebasestorage.app",
+            messagingSenderId: "6273757983",
+            appId: "1:6273757983:web:384d833700a30e8365362a",
+            measurementId: "G-10WY33CRQB"
+        };
+
+        // 設定情報を表示
+        document.getElementById('projectId').textContent = firebaseConfig.projectId;
+        document.getElementById('authDomain').textContent = firebaseConfig.authDomain;
+        document.getElementById('databaseURL').textContent = firebaseConfig.databaseURL;
+        document.getElementById('storageBucket').textContent = firebaseConfig.storageBucket;
+
+        async function testConnection() {
+            const statusBox = document.getElementById('statusBox');
+            const resultDetails = document.getElementById('resultDetails');
+            const nextSteps = document.getElementById('nextSteps');
+
+            try {
+                // Firebase初期化
+                const app = initializeApp(firebaseConfig);
+                const database = getDatabase(app);
+
+                // テストデータを書き込み
+                const testRef = ref(database, 'connection_test');
+                const testData = {
+                    timestamp: Date.now(),
+                    test: true,
+                    message: 'Connection test successful'
+                };
+
+                await set(testRef, testData);
+
+                // テストデータを読み込み
+                const snapshot = await get(testRef);
+
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    
+                    // テストデータを削除
+                    await remove(testRef);
+
+                    // 成功表示
+                    statusBox.className = 'status-box status-success';
+                    statusBox.innerHTML = `
+                        <h3 style="margin-bottom: 10px;">✅ 接続成功！</h3>
+                        <p>Firebaseへの接続と読み書きが正常に動作しています。</p>
+                    `;
+
+                    resultDetails.innerHTML = `
+                        <div class="steps">
+                            <h3>📊 テスト結果</h3>
+                            <ul style="list-style: none; padding: 0;">
+                                <li>✓ Firebase初期化: 成功</li>
+                                <li>✓ Realtime Database接続: 成功</li>
+                                <li>✓ データ書き込み: 成功</li>
+                                <li>✓ データ読み込み: 成功</li>
+                                <li>✓ データ削除: 成功</li>
+                            </ul>
+                        </div>
+                    `;
+
+                    nextSteps.innerHTML = `
+                        <div class="steps">
+                            <h3>🎉 準備完了！</h3>
+                            <p>以下のボタンからアプリを起動できます：</p>
+                            <ol>
+                                <li>「アプリを開く」ボタンをクリック</li>
+                                <li>セッション名と席の数を入力</li>
+                                <li>「セッション作成」をクリック</li>
+                                <li>QRコードが表示されます</li>
+                                <li>他のデバイスでQRコードを読み取って参加</li>
+                            </ol>
+                        </div>
+                    `;
+
+                } else {
+                    throw new Error('データの読み込みに失敗しました');
+                }
+
+            } catch (error) {
+                console.error('接続エラー:', error);
+
+                // エラー表示
+                statusBox.className = 'status-box status-error';
+                statusBox.innerHTML = `
+                    <h3 style="margin-bottom: 10px;">❌ 接続エラー</h3>
+                    <p><strong>エラー:</strong> ${error.message}</p>
+                `;
+
+                let troubleshooting = '';
+                
+                if (error.message.includes('permission') || error.message.includes('PERMISSION_DENIED')) {
+                    troubleshooting = `
+                        <div class="steps">
+                            <h3>🔧 解決方法: セキュリティルールの設定</h3>
+                            <p>Realtime Databaseのセキュリティルールが設定されていません。</p>
+                            <ol>
+                                <li><a href="https://console.firebase.google.com/project/strap-9e1ba/database/strap-9e1ba-default-rtdb/rules" target="_blank" class="link">Firebase Console - ルール設定</a> を開く</li>
+                                <li>以下のルールをコピー＆ペースト:</li>
+                            </ol>
+                            <div class="code">{
+  "rules": {
+    "sessions": {
+      "$sessionId": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "connection_test": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}</div>
+                            <ol start="3">
+                                <li>「公開」ボタンをクリック</li>
+                                <li>このページを再読み込み（F5）</li>
+                            </ol>
+                        </div>
+                    `;
+                } else if (error.message.includes('network') || error.message.includes('fetch')) {
+                    troubleshooting = `
+                        <div class="steps">
+                            <h3>🔧 解決方法: ネットワーク接続</h3>
+                            <ol>
+                                <li>インターネット接続を確認</li>
+                                <li>ファイアウォールの設定を確認</li>
+                                <li>VPNを使用している場合は無効化</li>
+                            </ol>
+                        </div>
+                    `;
+                } else if (error.message.includes('not found') || error.message.includes('404')) {
+                    troubleshooting = `
+                        <div class="steps">
+                            <h3>🔧 解決方法: Realtime Databaseの有効化</h3>
+                            <ol>
+                                <li><a href="https://console.firebase.google.com/project/strap-9e1ba/database" target="_blank" class="link">Firebase Console - Database</a> を開く</li>
+                                <li>「データベースを作成」をクリック</li>
+                                <li>ロケーションを選択（例: us-central1）</li>
+                                <li>「テストモードで開始」を選択</li>
+                                <li>「有効にする」をクリック</li>
+                                <li>このページを再読み込み（F5）</li>
+                            </ol>
+                        </div>
+                    `;
+                } else {
+                    troubleshooting = `
+                        <div class="steps">
+                            <h3>🔧 一般的なトラブルシューティング</h3>
+                            <ol>
+                                <li><a href="https://console.firebase.google.com/project/strap-9e1ba/database" target="_blank" class="link">Firebase Console</a> でRealtime Databaseが有効か確認</li>
+                                <li>セキュリティルールが設定されているか確認</li>
+                                <li>ブラウザのコンソール（F12）でエラーを確認</li>
+                                <li><a href="FIREBASE_SETUP.md" target="_blank" class="link">詳細なセットアップガイド</a>を参照</li>
+                            </ol>
+                        </div>
+                    `;
+                }
+
+                resultDetails.innerHTML = troubleshooting;
+            }
+        }
+
+        // テスト実行
+        testConnection();
+    </script>
+</body>
+</html>
