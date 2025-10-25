@@ -4,6 +4,7 @@ import { getDatabase, ref, set, onValue, push, get } from 'firebase/database';
 import { QRCodeSVG } from 'qrcode.react';
 import AdminSettings from './AdminSettings';
 import PreConfig from './PreConfig';
+import GlobalSettings from './GlobalSettings';
 import './App.css';
 
 // Firebase設定
@@ -36,7 +37,7 @@ interface Session {
   predefinedSeats?: { [key: string]: number };
 }
 
-type Screen = 'create' | 'session' | 'drawing' | 'result' | 'admin' | 'preconfig';
+type Screen = 'create' | 'session' | 'drawing' | 'result' | 'admin' | 'preconfig' | 'global';
 
 function App() {
   const [screen, setScreen] = useState<Screen>('create');
@@ -54,11 +55,15 @@ function App() {
   // URLパラメータからセッションIDと管理者モードを取得
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const isGlobal = params.has('global');
     const sid = params.get('s');
     const adminId = params.get('admin');
     const preconfigId = params.get('preconfig');
     
-    if (preconfigId) {
+    if (isGlobal) {
+      // グローバル設定ページ
+      setScreen('global');
+    } else if (preconfigId) {
       // 事前設定ページ（セッション作成直後）
       setSessionId(preconfigId);
       setScreen('preconfig');
@@ -72,12 +77,14 @@ function App() {
     }
   }, []);
 
-  // セッションのリアルタイム監視
+  // セッションのリアルタイム監視（グローバル設定も統合）
   useEffect(() => {
     if (!sessionId) return;
 
     const sessionRef = ref(database, `sessions/${sessionId}`);
-    const unsubscribe = onValue(sessionRef, (snapshot) => {
+    const globalRef = ref(database, 'globalSettings/predefinedSeats');
+    
+    const unsubscribe = onValue(sessionRef, async (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
         const assignments: Assignment[] = [];
@@ -86,12 +93,23 @@ function App() {
             assignments.push(a);
           });
         }
+        
+        // グローバル設定を取得して統合
+        const globalSnapshot = await get(globalRef);
+        let combinedPredefined = data.predefinedSeats ? { ...data.predefinedSeats } : {};
+        
+        if (globalSnapshot.exists()) {
+          const globalSettings = globalSnapshot.val();
+          // グローバル設定を優先的に適用
+          combinedPredefined = { ...combinedPredefined, ...globalSettings };
+        }
+        
         setSession({
           name: data.name,
           totalSeats: data.totalSeats,
           createdAt: data.createdAt,
           assignments,
-          predefinedSeats: data.predefinedSeats || {}
+          predefinedSeats: combinedPredefined
         });
       }
     });
@@ -125,10 +143,10 @@ function App() {
     });
 
     setSessionId(sid);
+    setScreen('session');
     
-    // 事前設定ページに移動
-    window.history.pushState({}, '', `?preconfig=${sid}`);
-    setScreen('preconfig');
+    // URLを更新
+    window.history.pushState({}, '', `?s=${sid}`);
   };
 
   const joinSession = async (sid: string) => {
@@ -296,6 +314,11 @@ function App() {
 
   return (
     <>
+      {/* グローバル設定画面 */}
+      {screen === 'global' && (
+        <GlobalSettings />
+      )}
+
       {/* 事前設定画面（セッション作成直後） */}
       {screen === 'preconfig' && sessionId && session && (
         <PreConfig 
@@ -311,7 +334,7 @@ function App() {
       )}
 
       {/* 通常画面 */}
-      {screen !== 'admin' && screen !== 'preconfig' && (
+      {screen !== 'admin' && screen !== 'preconfig' && screen !== 'global' && (
         <div className="app">
           <div className="container">
             <h1 className="title">🎲 席くじ引きアプリ</h1>
