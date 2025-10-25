@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Quick API Test</title>
+</head>
+<body>
+    <h1>Quick Session Creation Test</h1>
+    <button onclick="testCreate()">Test Create Session</button>
+    <pre id="output"></pre>
+
+    <script>
+        async function testCreate() {
+            const output = document.getElementById('output');
+            output.textContent = 'Testing...\n';
+
+            const sessionId = 'sess_' + Math.random().toString(36).substring(2, 15);
+            const sessionData = {
+                session_id: sessionId,
+                session_name: 'クイックテスト',
+                total_seats: 10,
+                status: 'active'
+            };
+
+            output.textContent += 'Sending data:\n' + JSON.stringify(sessionData, null, 2) + '\n\n';
+
+            try {
+                const response = await fetch('/tables/sessions', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(sessionData)
+                });
+
+                output.textContent += 'Response status: ' + response.status + '\n';
+                output.textContent += 'Response status text: ' + response.statusText + '\n\n';
+
+                const result = await response.json();
+                output.textContent += 'Response data:\n' + JSON.stringify(result, null, 2) + '\n';
+
+                if (response.ok) {
+                    output.textContent += '\n✅ SUCCESS!';
+                } else {
+                    output.textContent += '\n❌ FAILED!';
+                }
+            } catch (error) {
+                output.textContent += '\n❌ ERROR: ' + error.message + '\n' + error.stack;
+            }
+        }
+    </script>
+</body>
+</html>
