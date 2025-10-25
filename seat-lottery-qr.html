@@ -323,7 +323,7 @@
     </div>
 
     <!-- QRCode生成ライブラリ -->
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://unpkg.com/qrcode/build/qrcode.js"></script>
 
     <script>
         // グローバル変数
@@ -450,21 +450,42 @@
 
             // QRコード生成
             const canvas = document.getElementById('qrcode');
-            if (typeof QRCode !== 'undefined') {
-                QRCode.toCanvas(canvas, shareUrl, {
-                    width: 250,
-                    margin: 2,
-                    color: {
-                        dark: '#667eea',
-                        light: '#ffffff'
-                    }
-                }, (error) => {
-                    if (error) console.error('QRコード生成エラー:', error);
-                });
-            } else {
-                console.error('QRCodeライブラリが読み込まれていません');
-                canvas.parentElement.innerHTML += '<p style="color: #666; margin: 10px 0;">QRコードを生成できませんでした</p>';
-            }
+            
+            // 方法1: QRCode.jsライブラリを使用
+            const generateQR = () => {
+                if (typeof QRCode !== 'undefined') {
+                    QRCode.toCanvas(canvas, shareUrl, {
+                        width: 250,
+                        margin: 2,
+                        color: {
+                            dark: '#667eea',
+                            light: '#ffffff'
+                        }
+                    }, (error) => {
+                        if (error) {
+                            console.error('QRコード生成エラー:', error);
+                            useGoogleChartsQR();
+                        }
+                    });
+                } else {
+                    useGoogleChartsQR();
+                }
+            };
+            
+            // 方法2: Google Charts API（フォールバック）
+            const useGoogleChartsQR = () => {
+                console.log('Google Charts APIを使用してQRコード生成');
+                const qrContainer = canvas.parentElement;
+                const img = document.createElement('img');
+                img.src = `https://chart.googleapis.com/chart?cht=qr&chs=250x250&chl=${encodeURIComponent(shareUrl)}`;
+                img.alt = 'QRコード';
+                img.style.maxWidth = '100%';
+                canvas.style.display = 'none';
+                qrContainer.insertBefore(img, canvas);
+            };
+            
+            // QRコード生成を実行
+            setTimeout(generateQR, 100);
 
             // 結果を読み込んで表示
             loadAndDisplayResults();
