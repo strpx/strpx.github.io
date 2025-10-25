@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>席くじ引きアプリ - リアルタイム共有</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* 全体のスタイル */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* ヘッダー */
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        /* 画面切り替え */
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        /* カード */
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+
+        /* フォーム */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 700;
+            color: #555;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        /* ボタン */
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+            width: 100%;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+        }
+
+        .btn-copy {
+            background: #4CAF50;
+            color: white;
+            width: auto;
+            margin-left: 10px;
+        }
+
+        .btn-large {
+            padding: 20px;
+            font-size: 1.2rem;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 区切り線 */
+        .divider {
+            text-align: center;
+            color: white;
+            margin: 20px 0;
+            font-weight: 700;
+        }
+
+        /* セッション情報 */
+        .session-info {
+            background: rgba(255,255,255,0.95);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .session-info h2 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .session-info p {
+            margin: 5px 0;
+        }
+
+        /* 抽選アニメーション */
+        .draw-animation {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .draw-animation.active {
+            display: block;
+        }
+
+        .roulette {
+            margin: 0 auto 20px;
+            width: 200px;
+            height: 200px;
+            border: 8px solid #667eea;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 1s infinite;
+        }
+
+        .roulette-number {
+            font-size: 4rem;
+            font-weight: 700;
+            color: #667eea;
+            animation: spin 0.1s linear infinite;
+        }
+
+        .animation-text {
+            font-size: 1.2rem;
+            color: #667eea;
+            font-weight: 700;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotateY(0deg);
+            }
+            to {
+                transform: rotateY(360deg);
+            }
+        }
+
+        /* 結果カード */
+        .result-card {
+            display: none;
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: fadeIn 0.5s;
+        }
+
+        .result-card.active {
+            display: block;
+        }
+
+        .result-content h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .seat-number {
+            font-size: 5rem;
+            font-weight: 700;
+            color: #764ba2;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .result-name {
+            font-size: 1.5rem;
+            color: #555;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* 結果リスト */
+        .results-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .results-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .live-badge {
+            background: #ff4444;
+            color: white;
+            font-size: 0.7rem;
+            padding: 4px 8px;
+            border-radius: 4px;
+            animation: blink 2s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50%, 100% {
+                opacity: 1;
+            }
+            25%, 75% {
+                opacity: 0.5;
+            }
+        }
+
+        .results-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            animation: slideIn 0.3s;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-item-name {
+            font-weight: 700;
+            color: #333;
+        }
+
+        .result-item-seat {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #764ba2;
+        }
+
+        .empty-message {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .notice {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #856404;
+        }
+
+        .notice strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        /* レスポンシブ */
+        @media (max-width: 600px) {
+            header h1 {
+                font-size: 2rem;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .seat-number {
+                font-size: 3.5rem;
+            }
+
+            .roulette {
+                width: 150px;
+                height: 150px;
+            }
+
+            .roulette-number {
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎲 席くじ引きアプリ</h1>
+            <p class="subtitle">ローカルストレージ版</p>
+        </header>
+
+        <div class="notice">
+            <strong>⚠️ 注意事項</strong>
+            このバージョンはブラウザのローカルストレージを使用します。同じブラウザ・同じデバイスでのみデータが共有されます。複数デバイスでの共有はできません。
+        </div>
+
+        <!-- セッション作成・参加画面 -->
+        <div id="setupScreen" class="screen active">
+            <div class="card">
+                <h2>新しいセッションを作成</h2>
+                <div class="form-group">
+                    <label for="sessionName">セッション名</label>
+                    <input type="text" id="sessionName" placeholder="例: 2025年度 第1回ミーティング" />
+                </div>
+                <div class="form-group">
+                    <label for="totalSeats">席の数</label>
+                    <input type="number" id="totalSeats" min="2" max="100" value="10" />
+                </div>
+                <button class="btn btn-primary" onclick="createSession()">セッション作成</button>
+            </div>
+
+            <div class="divider">または</div>
+
+            <div class="card">
+                <h2>既存のセッションに参加</h2>
+                <div class="form-group">
+                    <label for="sessionId">セッションID</label>
+                    <input type="text" id="sessionId" placeholder="セッションIDを入力" />
+                </div>
+                <button class="btn btn-secondary" onclick="joinSession()">セッション参加</button>
+            </div>
+        </div>
+
+        <!-- くじ引き画面 -->
+        <div id="drawScreen" class="screen">
+            <div class="session-info">
+                <h2 id="currentSessionName"></h2>
+                <p>セッションID: <strong id="currentSessionId"></strong></p>
+                <p>席数: <strong id="currentTotalSeats"></strong></p>
+                <button class="btn btn-small btn-copy" onclick="copySessionId()">📋 IDをコピー</button>
+            </div>
+
+            <div class="card">
+                <h2>くじ引きを実行</h2>
+                <div class="form-group">
+                    <label for="participantName">名前</label>
+                    <input type="text" id="participantName" placeholder="あなたの名前を入力" />
+                </div>
+                <button class="btn btn-primary btn-large" onclick="drawSeat()" id="drawButton">
+                    🎯 くじを引く
+                </button>
+            </div>
+
+            <!-- 抽選アニメーション -->
+            <div id="drawAnimation" class="draw-animation">
+                <div class="roulette">
+                    <div class="roulette-number" id="rouletteNumber">?</div>
+                </div>
+                <p class="animation-text">抽選中...</p>
+            </div>
+
+            <!-- 結果表示 -->
+            <div id="resultCard" class="result-card">
+                <div class="result-content">
+                    <h2>🎉 あなたの席番号</h2>
+                    <div class="seat-number" id="resultSeatNumber">-</div>
+                    <p class="result-name" id="resultName"></p>
+                </div>
+            </div>
+
+            <!-- リアルタイム結果リスト -->
+            <div class="results-section">
+                <h2>📊 抽選結果 <span class="live-badge">LIVE</span></h2>
+                <div id="resultsList" class="results-list">
+                    <p class="empty-message">まだ誰もくじを引いていません</p>
+                </div>
+            </div>
+
+            <button class="btn btn-secondary" onclick="backToSetup()">← セッション選択に戻る</button>
+        </div>
+    </div>
+
+    <script>
+        // グローバル変数
+        let currentSession = null;
+        let pollingInterval = null;
+        let usedSeats = new Set();
+
+        // LocalStorage キー
+        const STORAGE_SESSIONS = 'lottery_sessions';
+        const STORAGE_ASSIGNMENTS = 'lottery_assignments';
+
+        // ユーティリティ: ランダムなIDを生成
+        function generateId() {
+            return 'sess_' + Math.random().toString(36).substring(2, 15);
+        }
+
+        // LocalStorage 操作
+        function getSessions() {
+            const data = localStorage.getItem(STORAGE_SESSIONS);
+            return data ? JSON.parse(data) : [];
+        }
+
+        function saveSessions(sessions) {
+            localStorage.setItem(STORAGE_SESSIONS, JSON.stringify(sessions));
+        }
+
+        function getAssignments() {
+            const data = localStorage.getItem(STORAGE_ASSIGNMENTS);
+            return data ? JSON.parse(data) : [];
+        }
+
+        function saveAssignments(assignments) {
+            localStorage.setItem(STORAGE_ASSIGNMENTS, JSON.stringify(assignments));
+        }
+
+        // セッション作成
+        function createSession() {
+            const sessionName = document.getElementById('sessionName').value.trim();
+            const totalSeats = parseInt(document.getElementById('totalSeats').value);
+
+            if (!sessionName) {
+                alert('セッション名を入力してください');
+                return;
+            }
+
+            if (totalSeats < 2 || totalSeats > 100) {
+                alert('席の数は2〜100の範囲で指定してください');
+                return;
+            }
+
+            const sessionId = generateId();
+            const session = {
+                id: sessionId,
+                session_id: sessionId,
+                session_name: sessionName,
+                total_seats: totalSeats,
+                status: 'active',
+                created_at: new Date().toISOString()
+            };
+
+            // セッション保存
+            const sessions = getSessions();
+            sessions.push(session);
+            saveSessions(sessions);
+
+            currentSession = session;
+            showDrawScreen();
+        }
+
+        // セッション参加
+        function joinSession() {
+            const sessionId = document.getElementById('sessionId').value.trim();
+
+            if (!sessionId) {
+                alert('セッションIDを入力してください');
+                return;
+            }
+
+            const sessions = getSessions();
+            const session = sessions.find(s => s.session_id === sessionId);
+
+            if (session) {
+                currentSession = session;
+                showDrawScreen();
+            } else {
+                alert('セッションが見つかりませんでした\n\nID: ' + sessionId);
+            }
+        }
+
+        // くじ引き画面を表示
+        function showDrawScreen() {
+            document.getElementById('setupScreen').classList.remove('active');
+            document.getElementById('drawScreen').classList.add('active');
+
+            document.getElementById('currentSessionName').textContent = currentSession.session_name;
+            document.getElementById('currentSessionId').textContent = currentSession.session_id;
+            document.getElementById('currentTotalSeats').textContent = currentSession.total_seats;
+
+            // リアルタイム更新を開始
+            startPolling();
+            loadResults();
+        }
+
+        // セッションIDをコピー
+        function copySessionId() {
+            const sessionId = currentSession.session_id;
+            navigator.clipboard.writeText(sessionId).then(() => {
+                alert('セッションIDをコピーしました！');
+            }).catch(err => {
+                prompt('セッションIDをコピーしてください:', sessionId);
+            });
+        }
+
+        // くじ引き実行
+        async function drawSeat() {
+            const participantName = document.getElementById('participantName').value.trim();
+
+            if (!participantName) {
+                alert('名前を入力してください');
+                return;
+            }
+
+            // ボタンを無効化
+            const drawButton = document.getElementById('drawButton');
+            drawButton.disabled = true;
+
+            // アニメーション開始
+            showDrawAnimation();
+
+            // 利用可能な席番号を取得
+            loadUsedSeats();
+            const availableSeats = [];
+            for (let i = 1; i <= currentSession.total_seats; i++) {
+                if (!usedSeats.has(i)) {
+                    availableSeats.push(i);
+                }
+            }
+
+            if (availableSeats.length === 0) {
+                alert('すべての席が埋まっています');
+                hideDrawAnimation();
+                drawButton.disabled = false;
+                return;
+            }
+
+            // ランダムに席を選択
+            const randomIndex = Math.floor(Math.random() * availableSeats.length);
+            const selectedSeat = availableSeats[randomIndex];
+
+            // アニメーション演出（2秒間）
+            let counter = 0;
+            const animationInterval = setInterval(() => {
+                const randomNum = Math.floor(Math.random() * currentSession.total_seats) + 1;
+                document.getElementById('rouletteNumber').textContent = randomNum;
+                counter++;
+                if (counter >= 20) {
+                    clearInterval(animationInterval);
+                    finalizeDraw(participantName, selectedSeat);
+                }
+            }, 100);
+        }
+
+        // くじ引き確定
+        function finalizeDraw(participantName, seatNumber) {
+            const assignment = {
+                id: generateId(),
+                session_id: currentSession.session_id,
+                participant_name: participantName,
+                seat_number: seatNumber,
+                created_at: new Date().toISOString()
+            };
+
+            // 割り当て保存
+            const assignments = getAssignments();
+            assignments.push(assignment);
+            saveAssignments(assignments);
+
+            hideDrawAnimation();
+            showResult(participantName, seatNumber);
+            loadResults();
+
+            // ボタンを再有効化
+            document.getElementById('drawButton').disabled = false;
+            document.getElementById('participantName').value = '';
+        }
+
+        // アニメーション表示
+        function showDrawAnimation() {
+            document.getElementById('drawAnimation').classList.add('active');
+            document.getElementById('resultCard').classList.remove('active');
+        }
+
+        // アニメーション非表示
+        function hideDrawAnimation() {
+            document.getElementById('drawAnimation').classList.remove('active');
+        }
+
+        // 結果表示
+        function showResult(name, seatNumber) {
+            document.getElementById('resultName').textContent = name + ' さん';
+            document.getElementById('resultSeatNumber').textContent = seatNumber;
+            document.getElementById('resultCard').classList.add('active');
+        }
+
+        // 使用済み席番号を読み込み
+        function loadUsedSeats() {
+            usedSeats.clear();
+            const assignments = getAssignments();
+            assignments.forEach(assignment => {
+                if (assignment.session_id === currentSession.session_id) {
+                    usedSeats.add(assignment.seat_number);
+                }
+            });
+        }
+
+        // 結果リストを読み込み
+        function loadResults() {
+            const assignments = getAssignments();
+            const sessionResults = assignments.filter(item => item.session_id === currentSession.session_id);
+
+            const resultsList = document.getElementById('resultsList');
+            
+            if (sessionResults.length === 0) {
+                resultsList.innerHTML = '<p class="empty-message">まだ誰もくじを引いていません</p>';
+                return;
+            }
+
+            // 席番号順にソート
+            sessionResults.sort((a, b) => a.seat_number - b.seat_number);
+
+            resultsList.innerHTML = sessionResults.map(item => `
+                <div class="result-item">
+                    <span class="result-item-name">${escapeHtml(item.participant_name)}</span>
+                    <span class="result-item-seat">席 ${item.seat_number}</span>
+                </div>
+            `).join('');
+
+            // 使用済み席を更新
+            usedSeats.clear();
+            sessionResults.forEach(item => {
+                usedSeats.add(item.seat_number);
+            });
+        }
+
+        // リアルタイム更新開始
+        function startPolling() {
+            // 既存のポーリングを停止
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+            }
+
+            // 3秒ごとに結果を更新
+            pollingInterval = setInterval(() => {
+                loadResults();
+            }, 3000);
+        }
+
+        // リアルタイム更新停止
+        function stopPolling() {
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
+        }
+
+        // セットアップ画面に戻る
+        function backToSetup() {
+            stopPolling();
+            currentSession = null;
+            usedSeats.clear();
+
+            document.getElementById('drawScreen').classList.remove('active');
+            document.getElementById('setupScreen').classList.add('active');
+            document.getElementById('resultCard').classList.remove('active');
+            document.getElementById('participantName').value = '';
+        }
+
+        // HTMLエスケープ
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // ページ離脱時にポーリング停止
+        window.addEventListener('beforeunload', () => {
+            stopPolling();
+        });
+
+        // storage イベントでリアルタイム同期（同じブラウザの別タブ）
+        window.addEventListener('storage', (e) => {
+            if ((e.key === STORAGE_ASSIGNMENTS || e.key === STORAGE_SESSIONS) && currentSession) {
+                loadResults();
+            }
+        });
+    </script>
+</body>
+</html>
