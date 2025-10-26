@@ -50,7 +50,7 @@ function App() {
   const [resultSeat, setResultSeat] = useState<number>(0);
   const [isDrawing, setIsDrawing] = useState(false);
 
-  const shareUrl = `${window.location.origin}?s=${sessionId}`;
+  const shareUrl = `${window.location.origin}/index-react.html?s=${sessionId}`;
 
   // URLパラメータからセッションIDと管理者モードを取得
   useEffect(() => {
