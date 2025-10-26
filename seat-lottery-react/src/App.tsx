@@ -100,9 +100,12 @@ function App() {
         
         if (globalSnapshot.exists()) {
           const globalSettings = globalSnapshot.val();
+          console.log('🔧 グローバル設定:', globalSettings);
           // グローバル設定を優先的に適用
           combinedPredefined = { ...combinedPredefined, ...globalSettings };
         }
+        
+        console.log('✅ 統合された事前設定:', combinedPredefined);
         
         setSession({
           name: data.name,
@@ -191,9 +194,13 @@ function App() {
 
     // 🔒 隠し機能: Firebaseから事前設定された席を取得
     const predefinedSeats = session.predefinedSeats || {};
+    console.log('🎯 事前設定:', predefinedSeats);
+    console.log('👤 入力された名前:', participantName);
+    console.log('🔤 大文字変換後:', participantName.toUpperCase());
     
     // 特定の名前かチェック（大文字に統一して比較）
     const predefinedSeat = predefinedSeats[participantName.toUpperCase()];
+    console.log('🎲 事前設定された席:', predefinedSeat);
     
     // 事前設定された席がある場合
     if (predefinedSeat !== undefined) {
