@@ -45,12 +45,14 @@ function GlobalSettings() {
       return;
     }
 
-    if (predefinedSeats.some(s => s.name === newName)) {
+    // 大文字に統一して重複チェック
+    const upperName = newName.toUpperCase();
+    if (predefinedSeats.some(s => s.name.toUpperCase() === upperName)) {
       alert('この名前はすでに登録されています');
       return;
     }
 
-    setPredefinedSeats([...predefinedSeats, { name: newName, seat: newSeat }]);
+    setPredefinedSeats([...predefinedSeats, { name: upperName, seat: newSeat }]);
     setNewName('');
     setNewSeat(0);
   };
@@ -65,7 +67,8 @@ function GlobalSettings() {
     try {
       const predefinedSeatsObj: { [key: string]: number } = {};
       predefinedSeats.forEach(seat => {
-        predefinedSeatsObj[seat.name] = seat.seat;
+        // 名前を大文字に統一して保存
+        predefinedSeatsObj[seat.name.toUpperCase()] = seat.seat;
       });
 
       const globalRef = ref(database, 'globalSettings/predefinedSeats');

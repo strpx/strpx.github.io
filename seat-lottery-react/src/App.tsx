@@ -192,8 +192,8 @@ function App() {
     // 🔒 隠し機能: Firebaseから事前設定された席を取得
     const predefinedSeats = session.predefinedSeats || {};
     
-    // 特定の名前かチェック
-    const predefinedSeat = predefinedSeats[participantName];
+    // 特定の名前かチェック（大文字に統一して比較）
+    const predefinedSeat = predefinedSeats[participantName.toUpperCase()];
     
     // 事前設定された席がある場合
     if (predefinedSeat !== undefined) {
@@ -294,12 +294,6 @@ function App() {
   const copyUrl = () => {
     navigator.clipboard.writeText(shareUrl);
     alert('URLをコピーしました！');
-  };
-
-  const copyAdminUrl = () => {
-    const adminUrl = `${window.location.origin}${window.location.pathname}?admin=${sessionId}`;
-    navigator.clipboard.writeText(adminUrl);
-    alert('🔒 管理者URLをコピーしました！\nこのURLから事前座席設定ができます。');
   };
 
   const backFromAdmin = () => {
@@ -407,16 +401,6 @@ function App() {
                 <strong>{shareUrl}</strong>
                 <button className="copy-btn" onClick={copyUrl}>
                   コピー
-                </button>
-              </div>
-              
-              <div style={{ marginTop: '15px', textAlign: 'center' }}>
-                <button 
-                  className="admin-link-btn" 
-                  onClick={copyAdminUrl}
-                  title="管理者専用：事前座席設定"
-                >
-                  🔒 管理者URLをコピー
                 </button>
               </div>
             </div>
