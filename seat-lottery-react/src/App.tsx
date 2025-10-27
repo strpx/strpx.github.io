@@ -7,6 +7,9 @@ import PreConfig from './PreConfig';
 import GlobalSettings from './GlobalSettings';
 import './App.css';
 
+const APP_VERSION = '1.0.1'; // Cache bust
+console.log('App version:', APP_VERSION);
+
 // Firebase設定
 const firebaseConfig = {
   apiKey: "AIzaSyCPZ89dzyZu4SOQmC1GWQZ64PlBNpqcuYk",
@@ -475,3 +478,4 @@ function App() {
 }
 
 export default App;
+// Cache bust: 1761541753
