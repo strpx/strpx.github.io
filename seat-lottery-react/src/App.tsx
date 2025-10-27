@@ -414,7 +414,7 @@ function App() {
                 type="text"
                 value={participantName}
                 onChange={(e) => setParticipantName(e.target.value)}
-                placeholder="入力例: 苗字の頭文字ひらがな　鳥取→と"
+                placeholder="入力例: 苗字の頭文字　鳥取→と"
               />
             </div>
 
