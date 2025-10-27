@@ -45,7 +45,7 @@ type Screen = 'create' | 'session' | 'drawing' | 'result' | 'admin' | 'preconfig
 function App() {
   const [screen, setScreen] = useState<Screen>('create');
   const [sessionName, setSessionName] = useState('');
-  const [totalSeats, setTotalSeats] = useState<number>(10);
+  const [totalSeats, setTotalSeats] = useState<string>('10');
   const [sessionId, setSessionId] = useState('');
   const [session, setSession] = useState<Session | null>(null);
   const [participantName, setParticipantName] = useState('');
@@ -130,7 +130,8 @@ function App() {
   };
 
   const createSession = async () => {
-    if (!sessionName || totalSeats < 1 || totalSeats > 100) {
+    const seats = parseInt(totalSeats);
+    if (!sessionName || isNaN(seats) || seats < 1 || seats > 100) {
       alert('セッション名と席の数を正しく入力してください');
       return;
     }
@@ -140,7 +141,7 @@ function App() {
     
     await set(sessionRef, {
       name: sessionName,
-      totalSeats,
+      totalSeats: seats,
       createdAt: Date.now(),
       status: 'active'
     });
@@ -353,17 +354,7 @@ function App() {
               <input
                 type="number"
                 value={totalSeats}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val === '') {
-                    setTotalSeats(0);
-                  } else {
-                    const num = parseInt(val);
-                    if (!isNaN(num)) {
-                      setTotalSeats(num);
-                    }
-                  }
-                }}
+                onChange={(e) => setTotalSeats(e.target.value)}
                 min="1"
                 max="100"
                 placeholder="例: 10"
