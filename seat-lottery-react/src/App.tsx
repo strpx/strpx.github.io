@@ -353,7 +353,17 @@ function App() {
               <input
                 type="number"
                 value={totalSeats}
-                onChange={(e) => setTotalSeats(parseInt(e.target.value) || 10)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === '') {
+                    setTotalSeats(0);
+                  } else {
+                    const num = parseInt(val);
+                    if (!isNaN(num)) {
+                      setTotalSeats(num);
+                    }
+                  }
+                }}
                 min="1"
                 max="100"
                 placeholder="例: 10"
