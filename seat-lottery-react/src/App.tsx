@@ -411,7 +411,7 @@ function App() {
                 type="text"
                 value={participantName}
                 onChange={(e) => setParticipantName(e.target.value)}
-                placeholder="例: 山田太郎"
+                placeholder="入力例: 苗字の頭文字ひらがな　鳥取→と"
               />
             </div>
 
@@ -420,7 +420,7 @@ function App() {
               onClick={drawSeat}
               disabled={isDrawing}
             >
-              🎯 くじを引く
+               くじを引く
             </button>
 
             {session.assignments.length > 0 && (
